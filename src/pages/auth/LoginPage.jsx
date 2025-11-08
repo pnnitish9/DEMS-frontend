@@ -15,8 +15,8 @@ export default function LoginPage() {
   // ✅ Auto-fill demo accounts based on type
   useEffect(() => {
     if (loginType === "admin") {
-      setEmail("pnnitish88725@gmail.com");
-      setPassword("123456");
+      setEmail("");
+      setPassword("");
     } else {
       setEmail("");
       setPassword("");
