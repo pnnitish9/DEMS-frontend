@@ -20,7 +20,7 @@ export default function ManageParticipantsPage() {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
-  /* ✅ Fetch event + registrations */
+  /* ✅ Load event + registrations */
   useEffect(() => {
     const load = async () => {
       try {
@@ -43,13 +43,13 @@ export default function ManageParticipantsPage() {
     if (eventId) load();
   }, [eventId]);
 
-  /* ✅ Refresh table */
+  /* ✅ Refresh table after check-in */
   const refresh = async () => {
     const { data } = await api.get(`/registrations/event/${eventId}`);
     setRegistrations(data);
   };
 
-  /* ✅ Manual Check-In */
+  /* ✅ Manual check-in button */
   const handleCheckIn = async (id) => {
     const ok = await checkInParticipant(id);
     if (ok) {
@@ -58,7 +58,7 @@ export default function ManageParticipantsPage() {
     }
   };
 
-  /* ✅ Search for participants */
+  /* ✅ Search by name/email */
   const handleSearch = () => {
     const q = searchText.trim().toLowerCase();
     if (!q) return setSearchResults([]);
@@ -73,22 +73,29 @@ export default function ManageParticipantsPage() {
     setSearchResults(results);
   };
 
-  /* ✅ QR Scan */
+  /* ✅ QR Scanner check-in */
   const handleQRScan = async (value) => {
-    try {
-      const parsed = JSON.parse(value);
+  try {
+    const parsed = JSON.parse(value);
 
-      if (!parsed.registrationId) return toast.error("Invalid QR");
-
-      const ok = await checkInParticipant(parsed.registrationId);
-      if (ok) {
-        toast.success("✅ QR Check-in successful");
-        refresh();
-      }
-    } catch {
-      toast.error("Invalid QR format");
+    if (!parsed.regId) {
+      return toast.error("Invalid QR: regId missing");
     }
-  };
+
+    const ok = await checkInParticipant(parsed.regId);
+
+    if (ok) {
+      toast.success(`✅ Checked-in: ${parsed.name}`);
+
+      await refresh();     // update table
+      setScannerOpen(false); // ✅ Auto-close scanner
+    }
+  } catch (err) {
+    toast.error("Invalid QR format");
+  }
+};
+
+
 
   if (loading || !event)
     return (
@@ -102,9 +109,8 @@ export default function ManageParticipantsPage() {
       <h1 className="text-3xl font-bold mb-1">Manage Participants</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-6">{event.title}</p>
 
-      {/* ✅ Check-in Actions */}
+      {/* ✅ Search + Scanner */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4 mb-6">
-
         <button
           onClick={() => setScannerOpen(true)}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg w-full md:w-auto"
@@ -158,9 +164,9 @@ export default function ManageParticipantsPage() {
 
       {/* ✅ QR Scanner Modal */}
       {scannerOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-md">
-          <div className="bg-white dark:bg-gray-900 p-5 rounded-xl w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Scan QR</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-bold mb-4">Scan QR Code</h2>
 
             <QRScanner onScan={handleQRScan} continuous />
 
@@ -174,15 +180,23 @@ export default function ManageParticipantsPage() {
         </div>
       )}
 
-      {/* ✅ Participants Table (Desktop) */}
-      <div className="hidden md:block bg-white dark:bg-gray-950 rounded-lg shadow border dark:border-gray-800 overflow-hidden">
+      {/* ✅ Desktop Table */}
+      <div className="hidden md:block bg-white dark:bg-gray-950 rounded-lg shadow border dark:border-gray-800 overflow-hidden mt-4">
         <table className="w-full">
           <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">Participant</th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">QR Code</th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                Participant
+              </th>
+              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                QR Code
+              </th>
+              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -190,8 +204,8 @@ export default function ManageParticipantsPage() {
             {registrations.map((reg) => (
               <tr key={reg._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
                 <td className="px-6 py-4">
-                  <div className="font-medium">{reg.user.name}</div>
-                  <div className="text-sm text-gray-500">{reg.user.email}</div>
+                  <p className="font-medium">{reg.user.name}</p>
+                  <p className="text-sm text-gray-500">{reg.user.email}</p>
                 </td>
 
                 <td className="px-6 py-4 text-xs font-mono">
@@ -200,11 +214,11 @@ export default function ManageParticipantsPage() {
 
                 <td className="px-6 py-4">
                   {reg.checkIn ? (
-                    <span className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                       Checked In
                     </span>
                   ) : (
-                    <span className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">
+                    <span className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
                       Not Checked In
                     </span>
                   )}
@@ -226,12 +240,12 @@ export default function ManageParticipantsPage() {
         </table>
       </div>
 
-      {/* ✅ Mobile Participant Cards */}
+      {/* ✅ Mobile Cards */}
       <div className="md:hidden space-y-4 mt-4">
         {registrations.map((reg) => (
           <div
             key={reg._id}
-            className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow border dark:border-gray-800"
+            className="p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-800 shadow"
           >
             <p className="font-semibold text-lg">{reg.user.name}</p>
             <p className="text-sm text-gray-500">{reg.user.email}</p>
@@ -242,7 +256,7 @@ export default function ManageParticipantsPage() {
 
             <div className="mt-3 flex items-center justify-between">
               {reg.checkIn ? (
-                <span className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">
                   Checked In
                 </span>
               ) : (
