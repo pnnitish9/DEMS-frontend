@@ -1,41 +1,38 @@
 import React, { useEffect, useRef, useState } from "react";
 
-export default function QRScanner({ onScan, continuous = true }) {
+export default function QRScanner({ onScan }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const [glow, setGlow] = useState(false);
-  const [lastScan, setLastScan] = useState(0); // ✅ Prevent double scanning
+  const [lastScanTime, setLastScanTime] = useState(0);
 
   useEffect(() => {
-    let stream;
+    let stream = null;
     let animationId;
 
     const startCamera = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: 1280, height: 720 },
+          video: { facingMode: "environment" },
         });
 
         videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute("playsinline", true);
-
         await videoRef.current.play();
-        scanLoop();
+
+        tick();
       } catch (err) {
-        console.error("Camera error:", err);
+        console.error("Camera Error:", err);
       }
     };
 
-    const scanLoop = () => {
-      animationId = requestAnimationFrame(scanLoop);
-      scan();
+    const tick = () => {
+      animationId = requestAnimationFrame(tick);
+      scanFrame();
     };
 
     const stopCamera = () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-      }
+      if (stream) stream.getTracks().forEach((t) => t.stop());
       cancelAnimationFrame(animationId);
     };
 
@@ -43,8 +40,7 @@ export default function QRScanner({ onScan, continuous = true }) {
     return stopCamera;
   }, []);
 
-  /* ✅ Actual scanner logic */
-  const scan = () => {
+  const scanFrame = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -71,22 +67,19 @@ export default function QRScanner({ onScan, continuous = true }) {
       if (qr) {
         const now = Date.now();
 
-        // ✅ prevent duplicate triggering
-        if (now - lastScan < 1500) return;
+        // ✅ Prevent repeated scanning within 1 second
+        if (now - lastScanTime < 1000) return;
 
-        setLastScan(now);
+        setLastScanTime(now);
 
-        // ✅ Glow green for feedback
+        // ✅ Glow effect
         setGlow(true);
-        setTimeout(() => setGlow(false), 500);
+        setTimeout(() => setGlow(false), 400);
 
         onScan(qr.data);
-
-        // ✅ Stop after 1 scan if continuous = false
-        if (!continuous) return;
       }
     } catch (err) {
-      console.error("QR scan error:", err);
+      console.error("QR Scan Error:", err);
     }
   };
 
@@ -94,14 +87,14 @@ export default function QRScanner({ onScan, continuous = true }) {
     <div className="relative w-full">
       <video
         ref={videoRef}
-        className={`w-full rounded-xl 
-          ${glow ? "ring-4 ring-green-500 shadow-lg shadow-green-400" : "ring-2 ring-gray-300"}
-          transition-all duration-300 bg-black`}
+        className={`w-full rounded-xl bg-black
+          ${glow ? "ring-4 ring-green-500 shadow-green-500" : "ring-2 ring-gray-300"} 
+          transition-all duration-300`}
       />
 
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* ✅ Nice scanning frame overlay */}
+      {/* ✅ QR Guide Frame */}
       <div className="absolute inset-0 border-4 border-white/30 rounded-xl pointer-events-none"></div>
     </div>
   );

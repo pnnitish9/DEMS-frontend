@@ -34,15 +34,17 @@ import ManageUsersPage from "./pages/admin/ManageUsersPage.jsx";
 import ProfilePage from "./pages/common/ProfilePage.jsx";
 import SettingsPage from "./pages/common/SettingsPage.jsx";
 
+// ✅ Toast
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 export default function App() {
   const { currentUser, authReady } = useAuthContext();
-  const { currentPage, navigate } = usePageContext();   // ✅ FIXED: added navigate
+  const { currentPage, navigate } = usePageContext();
   const { isDarkMode } = useThemeContext();
 
-  // ✅ Sidebar state (mobile)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // ✅ Show loader while checking token
   if (!authReady) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -51,16 +53,13 @@ export default function App() {
     );
   }
 
-  // ✅ Auto-redirect logged-in users from landing page to their dashboard
   if (currentUser && currentPage === "landing") {
     if (currentUser.role === "admin") navigate("admin-dashboard");
     else if (currentUser.role === "organizer") navigate("organizer-dashboard");
     else navigate("participant-dashboard");
   }
 
-  // ✅ Main Page Routing
   const renderPage = () => {
-    // ✅ PUBLIC PAGES (not logged in)
     if (!currentUser) {
       switch (currentPage) {
         case "landing":
@@ -74,7 +73,6 @@ export default function App() {
       }
     }
 
-    // ✅ PRIVATE PAGES (logged in)
     switch (currentPage) {
       case "landing":
         return <LandingPage />;
@@ -103,13 +101,12 @@ export default function App() {
       case "manage-users":
         return <ManageUsersPage />;
 
-      // Common Pages
+      // Common
       case "profile":
         return <ProfilePage />;
       case "settings":
         return <SettingsPage />;
 
-      // ✅ Fallback routing
       default:
         if (currentUser.role === "admin") return <AdminDashboard />;
         if (currentUser.role === "organizer") return <OrganizerDashboard />;
@@ -120,7 +117,7 @@ export default function App() {
   return (
     <div className={`flex min-h-screen w-full ${isDarkMode ? "dark" : ""}`}>
 
-      {/* ✅ Sidebar */}
+      {/* ✅ SIDEBAR */}
       {currentUser && (
         <Sidebar
           isOpen={isSidebarOpen}
@@ -128,15 +125,15 @@ export default function App() {
         />
       )}
 
-      {/* ✅ Main Wrapper */}
+      {/* ✅ WRAPPER */}
       <div className="flex-1 flex flex-col">
 
-        {/* ✅ Header */}
+        {/* ✅ HEADER */}
         {currentUser && (
           <Header openSidebar={() => setIsSidebarOpen(true)} />
         )}
 
-        {/* ✅ Page */}
+        {/* ✅ PAGE CONTENT */}
         <main
           className={`flex-1 p-6 lg:p-10 bg-gray-100 dark:bg-gray-900 ${
             currentUser ? "lg:ml-64" : ""
@@ -145,6 +142,18 @@ export default function App() {
           {renderPage()}
         </main>
       </div>
+
+      {/* ✅ GLOBAL TOAST: REQUIRED FOR QR SCAN SUCCESS/ERROR */}
+      <ToastContainer
+        position="top-center"
+        autoClose={1500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../api/api";
 import { usePageContext } from "../../context/PageContext";
 import { useDataContext } from "../../context/DataContext";
@@ -20,12 +20,14 @@ export default function ManageParticipantsPage() {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
-  /* ✅ Load event + registrations */
+  // ✅ store scanned regIds (cooldown 10 minutes)
+  const scannedCache = useRef({});
+
+  /* ✅ Load Event + Registrations */
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-
         const [evRes, regRes] = await Promise.all([
           api.get(`/events/${eventId}`),
           api.get(`/registrations/event/${eventId}`),
@@ -34,7 +36,7 @@ export default function ManageParticipantsPage() {
         setEvent(evRes.data);
         setRegistrations(regRes.data);
       } catch (err) {
-        console.error("Failed to load participants:", err);
+        console.error("Load error:", err);
       } finally {
         setLoading(false);
       }
@@ -43,22 +45,23 @@ export default function ManageParticipantsPage() {
     if (eventId) load();
   }, [eventId]);
 
-  /* ✅ Refresh table after check-in */
+  /* ✅ Refresh after check-in */
   const refresh = async () => {
     const { data } = await api.get(`/registrations/event/${eventId}`);
     setRegistrations(data);
   };
 
-  /* ✅ Manual check-in button */
-  const handleCheckIn = async (id) => {
-    const ok = await checkInParticipant(id);
+  /* ✅ Manual Check-in */
+  const handleCheckIn = async (regId) => {
+    const ok = await checkInParticipant(regId);
+
     if (ok) {
-      toast.success("✅ Successfully Checked In");
+      toast.success("✅ Check-in successful");
       refresh();
     }
   };
 
-  /* ✅ Search by name/email */
+  /* ✅ Search Handler */
   const handleSearch = () => {
     const q = searchText.trim().toLowerCase();
     if (!q) return setSearchResults([]);
@@ -73,29 +76,34 @@ export default function ManageParticipantsPage() {
     setSearchResults(results);
   };
 
-  /* ✅ QR Scanner check-in */
+  /* ✅ MULTI-SCAN QR Handler */
   const handleQRScan = async (value) => {
-  try {
-    const parsed = JSON.parse(value);
+    try {
+      const parsed = JSON.parse(value);
+      const regId = parsed.regId;
 
-    if (!parsed.regId) {
-      return toast.error("Invalid QR: regId missing");
+      if (!regId) return toast.error("Invalid QR");
+
+      const now = Date.now();
+      const lastTime = scannedCache.current[regId];
+
+      // ✅ Block same QR for 10 minutes
+      if (lastTime && now - lastTime < 10 * 60 * 1000) {
+        return;
+      }
+
+      scannedCache.current[regId] = now;
+
+      const ok = await checkInParticipant(regId);
+
+      if (ok) {
+        toast.success(`✅ Scanned: ${parsed.name}`);
+        await refresh();
+      }
+    } catch (err) {
+      toast.error("Invalid QR Code");
     }
-
-    const ok = await checkInParticipant(parsed.regId);
-
-    if (ok) {
-      toast.success(`✅ Checked-in: ${parsed.name}`);
-
-      await refresh();     // update table
-      setScannerOpen(false); // ✅ Auto-close scanner
-    }
-  } catch (err) {
-    toast.error("Invalid QR format");
-  }
-};
-
-
+  };
 
   if (loading || !event)
     return (
@@ -106,69 +114,37 @@ export default function ManageParticipantsPage() {
 
   return (
     <div className="pb-20">
+
       <h1 className="text-3xl font-bold mb-1">Manage Participants</h1>
       <p className="text-gray-600 dark:text-gray-400 mb-6">{event.title}</p>
 
       {/* ✅ Search + Scanner */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-3 mb-6">
+
         <button
           onClick={() => setScannerOpen(true)}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg w-full md:w-auto"
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
         >
-          📷 Scan QR
+          📷 Open QR Scanner
         </button>
 
         <input
           type="text"
-          placeholder="Enter name or email..."
-          className="px-3 py-2 border dark:bg-gray-900 dark:border-gray-700 rounded-lg w-full md:w-64"
+          placeholder="Search name or email..."
+          className="px-3 py-2 border rounded-lg dark:bg-gray-900 dark:border-gray-700 w-full md:w-80"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           onKeyUp={handleSearch}
         />
       </div>
 
-      {/* ✅ Search Results */}
-      {searchResults.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow border dark:border-gray-700 mb-6">
-          <h3 className="font-bold mb-3">Search Results</h3>
-
-          <div className="space-y-3">
-            {searchResults.map((reg) => (
-              <div
-                key={reg._id}
-                className="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg"
-              >
-                <div>
-                  <p className="font-semibold">{reg.user.name}</p>
-                  <p className="text-sm text-gray-500">{reg.user.email}</p>
-                </div>
-
-                {reg.checkIn ? (
-                  <span className="px-3 py-1 text-xs bg-green-200 text-green-800 rounded-full">
-                    Checked In
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleCheckIn(reg._id)}
-                    className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-                  >
-                    Check In
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ✅ QR Scanner Modal */}
       {scannerOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Scan QR Code</h2>
+            <h2 className="text-xl font-bold mb-4">Multi Scan QR Mode</h2>
 
-            <QRScanner onScan={handleQRScan} continuous />
+            <QRScanner onScan={handleQRScan} />
 
             <button
               onClick={() => setScannerOpen(false)}
@@ -180,45 +156,71 @@ export default function ManageParticipantsPage() {
         </div>
       )}
 
+      {/* ✅ Search Results */}
+      {searchResults.length > 0 && (
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow mb-6">
+          <h3 className="font-bold mb-3">Search Results</h3>
+
+          <div className="space-y-3">
+            {searchResults.map((reg) => (
+              <div
+                key={reg._id}
+                className="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg"
+              >
+                <div>
+                  <p className="font-semibold">{reg.user.name}</p>
+                  <p className="text-sm">{reg.user.email}</p>
+                </div>
+
+                {reg.checkIn ? (
+                  <span className="px-3 py-1 text-xs bg-green-200 text-green-800 rounded-full">
+                    Checked In
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleCheckIn(reg._id)}
+                    className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm"
+                  >
+                    Check In
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ✅ Desktop Table */}
-      <div className="hidden md:block bg-white dark:bg-gray-950 rounded-lg shadow border dark:border-gray-800 overflow-hidden mt-4">
+      <div className="hidden md:block bg-white dark:bg-gray-950 rounded-lg shadow border dark:border-gray-800 mt-4 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
-                Participant
-              </th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
-                QR Code
-              </th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 uppercase">
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left">Participant</th>
+              <th className="px-6 py-3 text-left">QR Code</th>
+              <th className="px-6 py-3 text-left">Status</th>
+              <th className="px-6 py-3 text-left">Actions</th>
             </tr>
           </thead>
 
           <tbody className="divide-y dark:divide-gray-800">
             {registrations.map((reg) => (
-              <tr key={reg._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+              <tr key={reg._id}>
                 <td className="px-6 py-4">
                   <p className="font-medium">{reg.user.name}</p>
                   <p className="text-sm text-gray-500">{reg.user.email}</p>
                 </td>
 
                 <td className="px-6 py-4 text-xs font-mono">
-                  {reg.qrCode.substring(0, 22)}...
+                  {reg.qrCode.substring(0, 25)}...
                 </td>
 
                 <td className="px-6 py-4">
                   {reg.checkIn ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    <span className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                       Checked In
                     </span>
                   ) : (
-                    <span className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
+                    <span className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">
                       Not Checked In
                     </span>
                   )}
@@ -228,7 +230,7 @@ export default function ManageParticipantsPage() {
                   {!reg.checkIn && (
                     <button
                       onClick={() => handleCheckIn(reg._id)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm"
                     >
                       Check In
                     </button>
@@ -245,9 +247,9 @@ export default function ManageParticipantsPage() {
         {registrations.map((reg) => (
           <div
             key={reg._id}
-            className="p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-800 shadow"
+            className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow border dark:border-gray-800"
           >
-            <p className="font-semibold text-lg">{reg.user.name}</p>
+            <p className="text-lg font-semibold">{reg.user.name}</p>
             <p className="text-sm text-gray-500">{reg.user.email}</p>
 
             <p className="mt-2 text-xs font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
@@ -262,7 +264,7 @@ export default function ManageParticipantsPage() {
               ) : (
                 <button
                   onClick={() => handleCheckIn(reg._id)}
-                  className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                  className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm"
                 >
                   Check In
                 </button>
@@ -271,6 +273,7 @@ export default function ManageParticipantsPage() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

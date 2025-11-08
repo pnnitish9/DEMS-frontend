@@ -22,13 +22,12 @@ export default function ManageUsersPage() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
 
-  const usersPerPage = 5;
+  const usersPerPage = 6;
   const [page, setPage] = useState(1);
 
   /* ------------------ Modals ------------------ */
   const [selectedUser, setSelectedUser] = useState(null);
   const [newRole, setNewRole] = useState("participant");
-
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -39,10 +38,10 @@ export default function ManageUsersPage() {
       setLoading(true);
       const res = await api.get("/admin/users");
 
-      // remove admin accounts from table
+      // remove admins
       setUsers(res.data.filter((u) => u.role !== "admin"));
     } catch (err) {
-      addNotification("Failed to load users");
+      addNotification("Error loading users", "Unable to fetch users.", "error");
     } finally {
       setLoading(false);
     }
@@ -52,16 +51,16 @@ export default function ManageUsersPage() {
     loadUsers();
   }, []);
 
-  /* ------------------ Filters ------------------ */
-  const filtered = users
+  /* ------------------ Filtering ------------------ */
+  const filteredUsers = users
     .filter((u) =>
       `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase())
     )
     .filter((u) => (filterRole === "all" ? true : u.role === filterRole));
 
   /* ------------------ Pagination ------------------ */
-  const totalPages = Math.ceil(filtered.length / usersPerPage);
-  const paginatedUsers = filtered.slice(
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const paginatedUsers = filteredUsers.slice(
     (page - 1) * usersPerPage,
     page * usersPerPage
   );
@@ -69,7 +68,7 @@ export default function ManageUsersPage() {
   const nextPage = () => page < totalPages && setPage(page + 1);
   const prevPage = () => page > 1 && setPage(page - 1);
 
-  /* ------------------ Modal Handlers ------------------ */
+  /* ------------------ Modals ------------------ */
   const openRoleModal = (u) => {
     setSelectedUser(u);
     setNewRole(u.role);
@@ -86,60 +85,70 @@ export default function ManageUsersPage() {
     setShowProfileModal(true);
   };
 
-  /* ------------------ API ROLE UPDATE ------------------ */
+  /* ------------------ Update Role ------------------ */
   const updateRole = async () => {
     try {
       await api.put(`/admin/users/${selectedUser._id}/role`, {
         role: newRole,
       });
 
-      addNotification("Role updated successfully");
+      addNotification("Role Updated", `${selectedUser.name}'s role updated`);
       setShowRoleModal(false);
       loadUsers();
     } catch {
-      addNotification("Failed to update role");
+      addNotification("Error", "Failed to update role", "error");
     }
   };
 
-  /* ------------------ API DELETE USER ------------------ */
+  /* ------------------ Delete User ------------------ */
   const deleteUser = async () => {
     try {
       await api.delete(`/admin/users/${selectedUser._id}`);
-      addNotification("User deleted successfully");
+
+      addNotification("User Removed", "User deleted successfully");
       setShowDeleteModal(false);
       loadUsers();
     } catch {
-      addNotification("Failed to delete user");
+      addNotification("Error", "Failed to delete user", "error");
     }
   };
 
-  /* ------------------ Glass-UI Modal Wrapper ------------------ */
+  /* ------------------ Modal Wrapper ------------------ */
   const Modal = ({ children, onClose }) => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 px-4">
-      <div className="bg-white/10 border border-white/20 rounded-2xl backdrop-blur-xl p-6 shadow-2xl w-full max-w-md relative animate-scaleIn">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="
+        bg-white dark:bg-gray-900 
+        border border-gray-300 dark:border-gray-700 
+        rounded-xl shadow-xl w-full max-w-md relative
+      ">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-slate-300 hover:text-white transition"
+          className="absolute top-3 right-3 text-gray-500 hover:text-black dark:text-gray-300 dark:hover:text-white"
         >
           <X className="w-5 h-5" />
         </button>
-        {children}
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 
   return (
-    <div className="pb-20 px-4 sm:px-6 md:px-10 lg:px-0">
+    <div className="pb-20">
       <h1 className="text-3xl font-bold mb-6">Manage Users</h1>
 
       {/* ✅ Search + Filters */}
       <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-        {/* Search */}
-        <div className="flex items-center bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 flex-1">
-          <Search className="w-5 h-5 text-slate-300" />
+        {/* Search Box */}
+        <div className="
+          flex items-center gap-2 px-4 py-2 
+          bg-white dark:bg-gray-900 
+          border border-gray-300 dark:border-gray-700 
+          rounded-lg shadow-sm w-full md:w-1/2
+        ">
+          <Search className="w-5 h-5 text-gray-400" />
           <input
-            className="bg-transparent ml-3 w-full outline-none text-white"
-            placeholder="Search by name or email..."
+            className="flex-1 bg-transparent outline-none"
+            placeholder="Search name or email..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -148,9 +157,13 @@ export default function ManageUsersPage() {
           />
         </div>
 
-        {/* Filter */}
+        {/* Role Filter */}
         <select
-          className="px-4 py-2 bg-black/10 text-white border border-white/10 backdrop-blur-xl rounded-xl"
+          className="
+            px-4 py-2 bg-white dark:bg-gray-900 
+            border border-gray-300 dark:border-gray-700 
+            rounded-lg shadow-sm
+          "
           value={filterRole}
           onChange={(e) => {
             setFilterRole(e.target.value);
@@ -163,60 +176,68 @@ export default function ManageUsersPage() {
         </select>
       </div>
 
-      {/* ✅ USERS TABLE (Desktop) */}
-      <div className="hidden md:block bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      {/* ✅ USERS TABLE (DESKTOP) */}
+      <div className="
+        hidden md:block 
+        bg-white dark:bg-gray-950 
+        border border-gray-300 dark:border-gray-800 
+        rounded-xl shadow-sm overflow-hidden
+      ">
         <table className="w-full">
-          <thead className="bg-white/10">
+          <thead className="bg-gray-100 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-xs uppercase text-slate-400 text-left">
+              <th className="px-6 py-3 text-left text-xs uppercase text-gray-500">
                 User
               </th>
-              <th className="px-6 py-3 text-xs uppercase text-slate-400">
-                Role
-              </th>
-              <th className="px-6 py-3 text-xs uppercase text-slate-400">
+              <th className="px-6 py-3 text-xs uppercase text-gray-500">Role</th>
+              <th className="px-6 py-3 text-xs uppercase text-gray-500">
                 Actions
               </th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y dark:divide-gray-800">
             {paginatedUsers.map((u) => (
               <tr
                 key={u._id}
-                className="hover:bg-white/5 transition cursor-pointer"
+                className="
+                  hover:bg-gray-50 dark:hover:bg-gray-800/40 
+                  cursor-pointer
+                "
                 onClick={() => openProfileModal(u)}
               >
                 <td className="px-6 py-4">
-                  <div className="font-semibold">{u.name}</div>
-                  <div className="text-sm text-slate-400">{u.email}</div>
+                  <p className="font-semibold">{u.name}</p>
+                  <p className="text-sm text-gray-500">{u.email}</p>
                 </td>
 
                 <td className="px-6 py-4">
-                  <span className="px-3 py-1 text-xs rounded-full bg-white/10">
+                  <span
+                    className="px-3 py-1 text-xs rounded-full bg-gray-200 dark:bg-gray-800"
+                  >
                     {u.role}
                   </span>
                 </td>
 
                 <td className="px-6 py-4 flex gap-4">
                   <button
-                    className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       openRoleModal(u);
                     }}
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
-                    <Shield className="w-4 h-4" /> Role
+                    Change Role
                   </button>
 
                   <button
-                    className="text-red-400 hover:text-red-300 flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       openDeleteModal(u);
                     }}
+                    className="text-red-600 dark:text-red-400 hover:underline"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -224,42 +245,47 @@ export default function ManageUsersPage() {
           </tbody>
         </table>
 
-        {/* ✅ Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white/5">
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-900">
           <button
             onClick={prevPage}
             disabled={page === 1}
-            className="text-white/70 hover:text-white flex items-center gap-1 disabled:opacity-30"
+            className="text-gray-600 dark:text-gray-300 disabled:opacity-40 flex items-center gap-1"
           >
-            <ChevronLeft className="w-5 h-5" /> Prev
+            <ChevronLeft className="w-5 h-5" />
+            Prev
           </button>
 
-          <span className="text-white/70">
+          <span className="text-gray-600 dark:text-gray-300">
             Page {page} of {totalPages}
           </span>
 
           <button
             onClick={nextPage}
             disabled={page === totalPages}
-            className="text-white/70 hover:text-white flex items-center gap-1 disabled:opacity-30"
+            className="text-gray-600 dark:text-gray-300 disabled:opacity-40 flex items-center gap-1"
           >
             Next <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* ✅ MOBILE CARD LAYOUT */}
+      {/* ✅ MOBILE CARDS */}
       <div className="md:hidden space-y-4">
         {paginatedUsers.map((u) => (
           <div
             key={u._id}
-            className="p-4 bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl shadow cursor-pointer"
+            className="
+              p-4 bg-white dark:bg-gray-900 
+              border border-gray-300 dark:border-gray-700 
+              rounded-xl shadow-sm cursor-pointer
+            "
             onClick={() => openProfileModal(u)}
           >
             <p className="font-semibold text-lg">{u.name}</p>
-            <p className="text-sm text-slate-300 mb-3">{u.email}</p>
+            <p className="text-sm text-gray-500">{u.email}</p>
 
-            <span className="px-3 py-1 text-xs rounded-full bg-white/10">
+            <span className="px-3 py-1 mt-2 inline-block text-xs rounded-full bg-gray-200 dark:bg-gray-800">
               {u.role}
             </span>
 
@@ -269,7 +295,7 @@ export default function ManageUsersPage() {
                   e.stopPropagation();
                   openRoleModal(u);
                 }}
-                className="text-indigo-400 hover:text-indigo-300"
+                className="text-indigo-600 dark:text-indigo-400"
               >
                 Change Role
               </button>
@@ -279,7 +305,7 @@ export default function ManageUsersPage() {
                   e.stopPropagation();
                   openDeleteModal(u);
                 }}
-                className="text-red-400 hover:text-red-300"
+                className="text-red-600 dark:text-red-400"
               >
                 Delete
               </button>
@@ -288,23 +314,23 @@ export default function ManageUsersPage() {
         ))}
 
         {/* Mobile Pagination */}
-        <div className="flex justify-between items-center mt-4 px-1">
+        <div className="flex justify-between mt-4 items-center">
           <button
             onClick={prevPage}
             disabled={page === 1}
-            className="px-3 py-2 bg-white/10 rounded-lg disabled:opacity-40"
+            className="px-3 py-2 bg-gray-200 dark:bg-gray-800 rounded-lg disabled:opacity-40"
           >
             <ChevronLeft />
           </button>
 
-          <span className="text-white/80">
+          <span className="text-gray-600 dark:text-gray-300">
             {page} / {totalPages}
           </span>
 
           <button
             onClick={nextPage}
             disabled={page === totalPages}
-            className="px-3 py-2 bg-white/10 rounded-lg disabled:opacity-40"
+            className="px-3 py-2 bg-gray-200 dark:bg-gray-800 rounded-lg disabled:opacity-40"
           >
             <ChevronRight />
           </button>
@@ -314,16 +340,17 @@ export default function ManageUsersPage() {
       {/* ✅ ROLE MODAL */}
       {showRoleModal && (
         <Modal onClose={() => setShowRoleModal(false)}>
-          <h2 className="text-xl font-semibold text-center mb-4">
-            Change User Role
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Change User Role</h2>
 
-          <p className="text-slate-300 mb-4">
+          <p className="text-gray-600 dark:text-gray-400 mb-3">
             Updating: <strong>{selectedUser.name}</strong>
           </p>
 
           <select
-            className="w-full px-4 py-2 rounded-lg bg-black/40 text-white border border-white/20 backdrop-blur-xl mb-6"
+            className="
+              w-full px-4 py-2 bg-white dark:bg-gray-900 
+              border border-gray-300 dark:border-gray-700 rounded-lg mb-6
+            "
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
           >
@@ -333,7 +360,7 @@ export default function ManageUsersPage() {
 
           <button
             onClick={updateRole}
-            className="w-full px-4 py-2 rounded-lg bg-indigo-600/80 hover:bg-indigo-700 text-white shadow-lg"
+            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
           >
             Save Changes
           </button>
@@ -343,48 +370,43 @@ export default function ManageUsersPage() {
       {/* ✅ DELETE MODAL */}
       {showDeleteModal && (
         <Modal onClose={() => setShowDeleteModal(false)}>
-          <h2 className="text-xl font-semibold text-center mb-4">
-            Delete User
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Delete User</h2>
 
-          <p className="text-slate-300 text-center mb-6">
+          <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
             Are you sure you want to delete{" "}
-            <strong>{selectedUser.name}</strong>?<br />
-            This action cannot be undone.
+            <strong>{selectedUser.name}</strong>? <br />This action is permanent.
           </p>
 
           <button
             onClick={deleteUser}
-            className="w-full px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-700 text-white mb-4"
+            className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg mb-3"
           >
             Delete User
           </button>
 
           <button
             onClick={() => setShowDeleteModal(false)}
-            className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+            className="w-full py-2 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg"
           >
             Cancel
           </button>
         </Modal>
       )}
 
-      {/* ✅ PROFILE DETAILS MODAL */}
+      {/* ✅ PROFILE MODAL */}
       {showProfileModal && (
         <Modal onClose={() => setShowProfileModal(false)}>
           <div className="flex flex-col items-center text-center">
-            <User2 className="w-16 h-16 text-indigo-400 mb-4" />
+            <User2 className="w-16 h-16 text-indigo-500 mb-4" />
 
-            <h2 className="text-2xl font-semibold mb-2">
-              {selectedUser.name}
-            </h2>
+            <h2 className="text-2xl font-semibold">{selectedUser.name}</h2>
 
-            <p className="text-slate-300 flex items-center gap-2 mb-2">
+            <p className="text-gray-600 dark:text-gray-400 flex items-center gap-2 mt-2">
               <Mail className="w-5 h-5" />
               {selectedUser.email}
             </p>
 
-            <span className="px-3 py-1 rounded-full bg-white/10 text-sm">
+            <span className="px-3 py-1 mt-4 rounded-full bg-gray-200 dark:bg-gray-800 text-sm">
               {selectedUser.role}
             </span>
           </div>
@@ -393,3 +415,4 @@ export default function ManageUsersPage() {
     </div>
   );
 }
+  
