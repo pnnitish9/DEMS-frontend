@@ -1,0 +1,177 @@
+/* -----------------------------------------
+   GLOBAL VARIABLES (LIGHT + DARK)
+------------------------------------------ */
+
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-dark: #4338ca;
+
+  --bg-light: #f3f4f6;
+  --bg-dark: #0f172a;
+
+  --card-light: #ffffff;
+  --card-dark: #1e293b;
+
+  --input-light: #ffffff;
+  --input-dark: #334155;
+
+  --border-light: #d1d5db;
+  --border-dark: #475569;
+
+  --text-light: #111827;
+  --text-dark: #e2e8f0;
+}
+
+/* -----------------------------------------
+   DARK MODE ROOT
+------------------------------------------ */
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* -----------------------------------------
+   BASE
+------------------------------------------ */
+
+body {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+html.dark body {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* -----------------------------------------
+   SCROLLBAR
+------------------------------------------ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+/* -----------------------------------------
+   CARD COMPONENT
+------------------------------------------ */
+
+.card {
+  background-color: var(--card-light);
+  border: 1px solid var(--border-light);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  transition: background 0.3s ease, border 0.3s ease;
+}
+
+html.dark .card {
+  background-color: var(--card-dark);
+  border-color: var(--border-dark);
+}
+
+/* -----------------------------------------
+   INPUT COMPONENT
+------------------------------------------ */
+
+.input-field {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-light);
+  background: var(--input-light);
+  transition: 0.25s ease;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+html.dark .input-field {
+  background: var(--input-dark);
+  border-color: var(--border-dark);
+  color: var(--text-dark);
+}
+
+html.dark .input-field:focus {
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+}
+
+/* -----------------------------------------
+   BUTTON COMPONENT
+------------------------------------------ */
+
+.btn-primary {
+  background: var(--primary);
+  padding: 0.65rem 1rem;
+  border-radius: 0.6rem;
+  color: white;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-primary:active {
+  background: var(--primary-dark);
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------
+   ANIMATIONS
+------------------------------------------ */
+
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+
+@keyframes scan-line {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-scan {
+  animation: scan-line 1.8s infinite alternate ease-in-out;
+}
