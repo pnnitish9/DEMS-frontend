@@ -18,7 +18,7 @@ export default function ManageUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ------------------ Search & Filters & Pagination ------------------ */
+  /* ------------------ Search, Filter, Pagination ------------------ */
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
 
@@ -33,16 +33,14 @@ export default function ManageUsersPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  /* ------------------ Load Users ------------------ */
+  /* ------------------ Fetch Users ------------------ */
   const loadUsers = async () => {
     try {
       setLoading(true);
       const res = await api.get("/admin/users");
 
-      // ✅ Exclude admin accounts
-      const filtered = res.data.filter((u) => u.role !== "admin");
-
-      setUsers(filtered);
+      // remove admin accounts from table
+      setUsers(res.data.filter((u) => u.role !== "admin"));
     } catch (err) {
       addNotification("Failed to load users");
     } finally {
@@ -54,43 +52,47 @@ export default function ManageUsersPage() {
     loadUsers();
   }, []);
 
-  /* ------------------ Filter Logic ------------------ */
-  const filteredUsers = users
+  /* ------------------ Filters ------------------ */
+  const filtered = users
     .filter((u) =>
       `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase())
     )
     .filter((u) => (filterRole === "all" ? true : u.role === filterRole));
 
-  /* ------------------ Pagination Logic ------------------ */
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-  const paginatedUsers = filteredUsers.slice(
+  /* ------------------ Pagination ------------------ */
+  const totalPages = Math.ceil(filtered.length / usersPerPage);
+  const paginatedUsers = filtered.slice(
     (page - 1) * usersPerPage,
     page * usersPerPage
   );
 
+  const nextPage = () => page < totalPages && setPage(page + 1);
+  const prevPage = () => page > 1 && setPage(page - 1);
+
   /* ------------------ Modal Handlers ------------------ */
-  const openRoleModal = (user) => {
-    setSelectedUser(user);
-    setNewRole(user.role);
+  const openRoleModal = (u) => {
+    setSelectedUser(u);
+    setNewRole(u.role);
     setShowRoleModal(true);
   };
 
-  const openDeleteModal = (user) => {
-    setSelectedUser(user);
+  const openDeleteModal = (u) => {
+    setSelectedUser(u);
     setShowDeleteModal(true);
   };
 
-  const openProfileModal = (user) => {
-    setSelectedUser(user);
+  const openProfileModal = (u) => {
+    setSelectedUser(u);
     setShowProfileModal(true);
   };
 
-  /* ------------------ Backend Role Update ------------------ */
+  /* ------------------ API ROLE UPDATE ------------------ */
   const updateRole = async () => {
     try {
       await api.put(`/admin/users/${selectedUser._id}/role`, {
         role: newRole,
       });
+
       addNotification("Role updated successfully");
       setShowRoleModal(false);
       loadUsers();
@@ -99,7 +101,7 @@ export default function ManageUsersPage() {
     }
   };
 
-  /* ------------------ Backend Delete ------------------ */
+  /* ------------------ API DELETE USER ------------------ */
   const deleteUser = async () => {
     try {
       await api.delete(`/admin/users/${selectedUser._id}`);
@@ -111,10 +113,10 @@ export default function ManageUsersPage() {
     }
   };
 
-  /* ------------------ Modal Component ------------------ */
+  /* ------------------ Glass-UI Modal Wrapper ------------------ */
   const Modal = ({ children, onClose }) => (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white/10 border border-white/10 rounded-2xl backdrop-blur-xl p-6 shadow-2xl w-full max-w-md animate-scaleIn relative">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 px-4">
+      <div className="bg-white/10 border border-white/20 rounded-2xl backdrop-blur-xl p-6 shadow-2xl w-full max-w-md relative animate-scaleIn">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-slate-300 hover:text-white transition"
@@ -126,23 +128,18 @@ export default function ManageUsersPage() {
     </div>
   );
 
-  /* ------------------ Page Change ------------------ */
-  const nextPage = () => page < totalPages && setPage(page + 1);
-  const prevPage = () => page > 1 && setPage(page - 1);
-
   return (
-    <div>
+    <div className="pb-20 px-4 sm:px-6 md:px-10 lg:px-0">
       <h1 className="text-3xl font-bold mb-6">Manage Users</h1>
 
-      {/* ------------------ Search + Filter Section ------------------ */}
+      {/* ✅ Search + Filters */}
       <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-
-        {/* Search Bar */}
+        {/* Search */}
         <div className="flex items-center bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 flex-1">
           <Search className="w-5 h-5 text-slate-300" />
           <input
             className="bg-transparent ml-3 w-full outline-none text-white"
-            placeholder="Search users by name or email..."
+            placeholder="Search by name or email..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -151,7 +148,7 @@ export default function ManageUsersPage() {
           />
         </div>
 
-        {/* Role Filter */}
+        {/* Filter */}
         <select
           className="px-4 py-2 bg-black/10 text-white border border-white/10 backdrop-blur-xl rounded-xl"
           value={filterRole}
@@ -166,101 +163,155 @@ export default function ManageUsersPage() {
         </select>
       </div>
 
-      {/* ------------------ Users Table ------------------ */}
-      {loading ? (
-        <div className="text-center py-20 text-slate-400">Loading users...</div>
-      ) : (
-        <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+      {/* ✅ USERS TABLE (Desktop) */}
+      <div className="hidden md:block bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <table className="w-full">
+          <thead className="bg-white/10">
+            <tr>
+              <th className="px-6 py-3 text-xs uppercase text-slate-400 text-left">
+                User
+              </th>
+              <th className="px-6 py-3 text-xs uppercase text-slate-400">
+                Role
+              </th>
+              <th className="px-6 py-3 text-xs uppercase text-slate-400">
+                Actions
+              </th>
+            </tr>
+          </thead>
 
-          <table className="w-full">
-            <thead className="bg-white/10">
-              <tr>
-                <th className="px-6 py-3 text-xs uppercase text-slate-400 text-left">
-                  User
-                </th>
-                <th className="px-6 py-3 text-xs uppercase text-slate-400">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-xs uppercase text-slate-400">
-                  Actions
-                </th>
+          <tbody className="divide-y divide-white/10">
+            {paginatedUsers.map((u) => (
+              <tr
+                key={u._id}
+                className="hover:bg-white/5 transition cursor-pointer"
+                onClick={() => openProfileModal(u)}
+              >
+                <td className="px-6 py-4">
+                  <div className="font-semibold">{u.name}</div>
+                  <div className="text-sm text-slate-400">{u.email}</div>
+                </td>
+
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 text-xs rounded-full bg-white/10">
+                    {u.role}
+                  </span>
+                </td>
+
+                <td className="px-6 py-4 flex gap-4">
+                  <button
+                    className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openRoleModal(u);
+                    }}
+                  >
+                    <Shield className="w-4 h-4" /> Role
+                  </button>
+
+                  <button
+                    className="text-red-400 hover:text-red-300 flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(u);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
+            ))}
+          </tbody>
+        </table>
 
-            <tbody className="divide-y divide-white/10">
-              {paginatedUsers.map((u) => (
-                <tr
-                  key={u._id}
-                  className="hover:bg-white/5 transition cursor-pointer"
-                  onClick={() => openProfileModal(u)}
-                >
-                  <td className="px-6 py-4">
-                    <div className="font-semibold">{u.name}</div>
-                    <div className="text-sm text-slate-400">{u.email}</div>
-                  </td>
+        {/* ✅ Pagination */}
+        <div className="flex items-center justify-between px-6 py-4 bg-white/5">
+          <button
+            onClick={prevPage}
+            disabled={page === 1}
+            className="text-white/70 hover:text-white flex items-center gap-1 disabled:opacity-30"
+          >
+            <ChevronLeft className="w-5 h-5" /> Prev
+          </button>
 
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 text-xs rounded-full bg-white/10">
-                      {u.role}
-                    </span>
-                  </td>
+          <span className="text-white/70">
+            Page {page} of {totalPages}
+          </span>
 
-                  <td className="px-6 py-4 flex gap-4">
+          <button
+            onClick={nextPage}
+            disabled={page === totalPages}
+            className="text-white/70 hover:text-white flex items-center gap-1 disabled:opacity-30"
+          >
+            Next <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
-                    <button
-                      className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openRoleModal(u);
-                      }}
-                    >
-                      <Shield className="w-4 h-4" /> Role
-                    </button>
+      {/* ✅ MOBILE CARD LAYOUT */}
+      <div className="md:hidden space-y-4">
+        {paginatedUsers.map((u) => (
+          <div
+            key={u._id}
+            className="p-4 bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl shadow cursor-pointer"
+            onClick={() => openProfileModal(u)}
+          >
+            <p className="font-semibold text-lg">{u.name}</p>
+            <p className="text-sm text-slate-300 mb-3">{u.email}</p>
 
-                    <button
-                      className="text-red-400 hover:text-red-300 flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteModal(u);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
-
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-
-          </table>
-
-          {/* ------------------ Pagination ------------------ */}
-          <div className="flex items-center justify-between px-6 py-4 bg-white/5">
-            <button
-              className="text-white/70 hover:text-white flex items-center gap-1"
-              onClick={prevPage}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="w-5 h-5" /> Prev
-            </button>
-
-            <span className="text-white/70">
-              Page {page} of {totalPages}
+            <span className="px-3 py-1 text-xs rounded-full bg-white/10">
+              {u.role}
             </span>
 
-            <button
-              className="text-white/70 hover:text-white flex items-center gap-1"
-              onClick={nextPage}
-              disabled={page === totalPages}
-            >
-              Next <ChevronRight className="w-5 h-5" />
-            </button>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openRoleModal(u);
+                }}
+                className="text-indigo-400 hover:text-indigo-300"
+              >
+                Change Role
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeleteModal(u);
+                }}
+                className="text-red-400 hover:text-red-300"
+              >
+                Delete
+              </button>
+            </div>
           </div>
+        ))}
 
+        {/* Mobile Pagination */}
+        <div className="flex justify-between items-center mt-4 px-1">
+          <button
+            onClick={prevPage}
+            disabled={page === 1}
+            className="px-3 py-2 bg-white/10 rounded-lg disabled:opacity-40"
+          >
+            <ChevronLeft />
+          </button>
+
+          <span className="text-white/80">
+            {page} / {totalPages}
+          </span>
+
+          <button
+            onClick={nextPage}
+            disabled={page === totalPages}
+            className="px-3 py-2 bg-white/10 rounded-lg disabled:opacity-40"
+          >
+            <ChevronRight />
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* ------------------ Role Modal ------------------ */}
+      {/* ✅ ROLE MODAL */}
       {showRoleModal && (
         <Modal onClose={() => setShowRoleModal(false)}>
           <h2 className="text-xl font-semibold text-center mb-4">
@@ -272,9 +323,9 @@ export default function ManageUsersPage() {
           </p>
 
           <select
+            className="w-full px-4 py-2 rounded-lg bg-black/40 text-white border border-white/20 backdrop-blur-xl mb-6"
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-black/40 text-white border border-white/20 mb-6 backdrop-blur-xl"
           >
             <option value="participant">Participant</option>
             <option value="organizer">Organizer</option>
@@ -282,14 +333,14 @@ export default function ManageUsersPage() {
 
           <button
             onClick={updateRole}
-            className="w-full px-4 py-2 rounded-lg bg-indigo-600/80 hover:bg-indigo-700 text-white shadow-lg backdrop-blur-xl"
+            className="w-full px-4 py-2 rounded-lg bg-indigo-600/80 hover:bg-indigo-700 text-white shadow-lg"
           >
             Save Changes
           </button>
         </Modal>
       )}
 
-      {/* ------------------ Delete Modal ------------------ */}
+      {/* ✅ DELETE MODAL */}
       {showDeleteModal && (
         <Modal onClose={() => setShowDeleteModal(false)}>
           <h2 className="text-xl font-semibold text-center mb-4">
@@ -298,28 +349,27 @@ export default function ManageUsersPage() {
 
           <p className="text-slate-300 text-center mb-6">
             Are you sure you want to delete{" "}
-            <strong>{selectedUser.name}</strong>?  
-            <br />
+            <strong>{selectedUser.name}</strong>?<br />
             This action cannot be undone.
           </p>
 
           <button
             onClick={deleteUser}
-            className="w-full px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-700 text-white shadow-lg backdrop-blur-xl mb-4"
+            className="w-full px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-700 text-white mb-4"
           >
             Delete User
           </button>
 
           <button
             onClick={() => setShowDeleteModal(false)}
-            className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
+            className="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white"
           >
             Cancel
           </button>
         </Modal>
       )}
 
-      {/* ------------------ Profile Preview Modal ------------------ */}
+      {/* ✅ PROFILE DETAILS MODAL */}
       {showProfileModal && (
         <Modal onClose={() => setShowProfileModal(false)}>
           <div className="flex flex-col items-center text-center">

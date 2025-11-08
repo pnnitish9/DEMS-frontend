@@ -12,8 +12,8 @@ export default function CreateEventPage() {
   const [date, setDate] = useState("");
   const [category, setCategory] = useState("Workshop");
 
-  const [location, setLocation] = useState("");      // ✅ NEW
-  const [poster, setPoster] = useState("");          // ✅ NEW (image url)
+  const [location, setLocation] = useState("");
+  const [poster, setPoster] = useState("");
 
   const [loading, setLoading] = useState(false);
 
@@ -26,92 +26,107 @@ export default function CreateEventPage() {
       description,
       date,
       category,
-      location,     // ✅ NEW FIELD SENT TO BACKEND
-      poster,       // ✅ NEW FIELD SENT TO BACKEND
+      location,
+      poster,
       isPaid: false,
       price: 0,
     });
 
     setLoading(false);
+
     if (ok) navigate("organizer-dashboard");
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Create New Event</h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-0 pb-20">
+      <h1 className="text-3xl font-bold mb-8 text-center md:text-left">
+        Create New Event
+      </h1>
 
       <form
         onSubmit={submit}
-        className="p-8 bg-white dark:bg-gray-950 rounded-lg shadow border dark:border-gray-800 space-y-6"
+        className="p-6 sm:p-8 bg-white dark:bg-gray-950 rounded-xl shadow border dark:border-gray-800 space-y-6"
       >
-        {/* Title */}
+        {/* ✅ TITLE */}
         <div>
-          <label className="block text-sm font-medium">Event Title</label>
+          <label className="block text-sm font-medium mb-1">Event Title</label>
           <input
             type="text"
-            className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
         </div>
 
-        {/* Description */}
+        {/* ✅ DESCRIPTION */}
         <div>
-          <label className="block text-sm font-medium">Description</label>
+          <label className="block text-sm font-medium mb-1">Description</label>
           <textarea
             rows="4"
-            className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg resize-none"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
           ></textarea>
         </div>
 
-        {/* ✅ Venue / Location */}
+        {/* ✅ LOCATION */}
         <div>
-          <label className="block text-sm font-medium">Event Venue / Location</label>
+          <label className="block text-sm font-medium mb-1">Event Venue / Location</label>
           <input
             type="text"
             placeholder="Ex: Delhi Auditorium, Block A"
-            className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             required
           />
         </div>
 
-        {/* ✅ Poster Image URL */}
+        {/* ✅ POSTER URL */}
         <div>
-          <label className="block text-sm font-medium">Poster Image URL</label>
+          <label className="block text-sm font-medium mb-1">Poster Image URL</label>
           <input
             type="text"
             placeholder="Paste an image URL"
-            className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg"
             value={poster}
             onChange={(e) => setPoster(e.target.value)}
             required
           />
+
+          {/* ✅ LIVE POSTER PREVIEW */}
+          {poster && (
+            <div className="mt-3">
+              <img
+                src={poster}
+                alt="Poster Preview"
+                className="w-full max-h-64 object-cover rounded-lg border dark:border-gray-700"
+              />
+            </div>
+          )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Date */}
+        {/* ✅ TWO GRID FIELDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ✅ DATE */}
           <div>
-            <label className="block text-sm font-medium">Date & Time</label>
+            <label className="block text-sm font-medium mb-1">Date & Time</label>
             <input
               type="datetime-local"
-              className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
             />
           </div>
 
-          {/* Category */}
+          {/* ✅ CATEGORY */}
           <div>
-            <label className="block text-sm font-medium">Category</label>
+            <label className="block text-sm font-medium mb-1">Category</label>
             <select
-              className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-800 border rounded-md"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border rounded-lg"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -124,11 +139,12 @@ export default function CreateEventPage() {
           </div>
         </div>
 
+        {/* ✅ SUBMIT */}
         <div className="text-right">
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50"
           >
             {loading ? "Submitting..." : "Submit for Approval"}
           </button>

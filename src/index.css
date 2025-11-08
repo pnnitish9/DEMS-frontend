@@ -175,3 +175,15 @@ html.dark .input-field:focus {
 .animate-scan {
   animation: scan-line 1.8s infinite alternate ease-in-out;
 }
+
+
+.animate-blue-yellow {
+  background-size: 200% 200%;
+  animation: blueYellowShift 4s ease infinite;
+}
+
+@keyframes blueYellowShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
