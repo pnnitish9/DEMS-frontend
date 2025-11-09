@@ -2,7 +2,7 @@ import axios from "axios";
 
 // ✅ Create an Axios instance
 export const api = axios.create({
-  baseURL: "https://dems-backend.vercel.app/api",   // ✅ UPDATED HERE
+  baseURL: "https://dems-backend-q83g.onrender.com/api", 
 });
 
 // ✅ Automatically attach JWT token to every request
