@@ -196,3 +196,34 @@ html.dark .input-field:focus {
 .animate-slideDown {
   animation: slideDown 0.25s ease-out;
 }
+@keyframes fade-slide {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.animate-fade-slide {
+  animation: fade-slide 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.18s ease-out;
+}
+
+

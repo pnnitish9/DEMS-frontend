@@ -2,7 +2,7 @@ import axios from "axios";
 
 // ✅ Create an Axios instance
 export const api = axios.create({
-  baseURL: "https://dems-backend-q83g.onrender.com/api", 
+  baseURL: "https://dems-backend-q83g.onrender.com/api", // ✅ FIXED PORT
 });
 
 // ✅ Automatically attach JWT token to every request
@@ -16,13 +16,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Optional: handle unauthorized responses (e.g., token expired)
+// ✅ Optional: handle unauthorized responses
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
       console.warn("Unauthorized — token may be invalid.");
-      // Optional: auto logout
+      // Optional: auto logout logic here
     }
     return Promise.reject(err);
   }

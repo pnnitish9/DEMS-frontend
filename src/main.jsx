@@ -1,31 +1,27 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-
-// ✅ MAIN APP
 import App from "./App.jsx";
-
-// ✅ GLOBAL STYLES (your custom CSS)
 import "./index.css";
 
-// ✅ CONTEXT PROVIDERS
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { AuthContextProvider } from "./context/AuthContext.jsx";
+import { PageContextProvider } from "./context/PageContext.jsx";
 import { DataContextProvider } from "./context/DataContext.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
-import { PageContextProvider } from "./context/PageContext.jsx";
-import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider>
-      <NotificationProvider>
-        <AuthContextProvider>
+      <AuthContextProvider>
+        <PageContextProvider>
           <DataContextProvider>
-            <PageContextProvider>
+            <NotificationProvider>
               <App />
-            </PageContextProvider>
+            </NotificationProvider>
           </DataContextProvider>
-        </AuthContextProvider>
-      </NotificationProvider>
+        </PageContextProvider>
+      </AuthContextProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

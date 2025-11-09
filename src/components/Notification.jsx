@@ -3,18 +3,22 @@ import { CheckCircle, XCircle, Info, X } from "lucide-react";
 import { useNotificationContext } from "../context/NotificationContext";
 
 export function NotificationContainer() {
-  const { notifications, removeNotification } = useNotificationContext();
+  const { toastList, removeToast } = useNotificationContext();
 
   return (
-    <div className="fixed top-6 right-6 z-50 w-full max-w-sm">
-      {notifications.map((n) => (
-        <Notification key={n.id} {...n} onDismiss={() => removeNotification(n.id)} />
+    <div className="fixed top-6 right-6 z-50 w-full max-w-sm space-y-3">
+      {toastList.map((n) => (
+        <ToastNotification
+          key={n.id}
+          {...n}
+          onDismiss={() => removeToast(n.id)}
+        />
       ))}
     </div>
   );
 }
 
-export function Notification({ id, title, message, type, onDismiss }) {
+export function ToastNotification({ id, title, message, type, onDismiss }) {
   const icons = {
     success: <CheckCircle className="w-6 h-6 text-green-500" />,
     error: <XCircle className="w-6 h-6 text-red-500" />,
@@ -22,11 +26,16 @@ export function Notification({ id, title, message, type, onDismiss }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-950 shadow-lg border dark:border-gray-800 rounded-lg p-4 mb-4 flex items-start">
+    <div
+      className="
+        bg-white dark:bg-gray-900 shadow-lg border dark:border-gray-800 
+        rounded-lg p-4 flex items-start animate-slide-in
+      "
+    >
       <div className="flex-shrink-0">{icons[type]}</div>
 
       <div className="ml-3 flex-1">
-        <p className="font-medium">{title}</p>
+        <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
         <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
       </div>
 

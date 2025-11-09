@@ -1,24 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../api/api";
-import { useNotificationContext } from "./NotificationContext";
 
 const AuthContext = createContext();
 export const useAuthContext = () => useContext(AuthContext);
 
 export function AuthContextProvider({ children }) {
-  const { addNotification } = useNotificationContext();
-
   const [currentUser, setCurrentUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
-  const [loading, setLoading] = useState(false); // ✅ expose to pages
+  const [loading, setLoading] = useState(false);
 
-  // Load user from token on boot
+  /* ✅ Load user on app start */
   useEffect(() => {
     const token = localStorage.getItem("demp-token");
     if (!token) {
       setAuthReady(true);
       return;
     }
+
     api
       .get("/auth/profile")
       .then((res) => setCurrentUser(res.data))
@@ -26,44 +24,48 @@ export function AuthContextProvider({ children }) {
       .finally(() => setAuthReady(true));
   }, []);
 
+  /* ✅ Login (no notification here) */
   const login = async (email, password) => {
     setLoading(true);
     try {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("demp-token", data.token);
       setCurrentUser(data);
-      addNotification?.("Welcome back!", `Logged in as ${data.name}`, "success");
-      return true;
+      return { success: true, user: data };
     } catch (e) {
-      addNotification?.("Login failed", e.response?.data?.message || "Invalid credentials", "error");
-      return false;
+      return { success: false, message: e.response?.data?.message };
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ match RegisterPage usage: register(name, email, password, role)
+  /* ✅ Register (no notification here) */
   const register = async (name, email, password, role) => {
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/register", { name, email, password, role });
+      const { data } = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+        role,
+      });
       localStorage.setItem("demp-token", data.token);
       setCurrentUser(data);
-      addNotification?.("Account created", "Welcome to DEMP!", "success");
-      return true;
+      return { success: true, user: data };
     } catch (e) {
-      addNotification?.("Registration failed", e.response?.data?.message || "Please try again", "error");
-      return false;
+      return { success: false, message: e.response?.data?.message };
     } finally {
       setLoading(false);
     }
   };
 
+  /* ✅ Logout */
   const logout = () => {
     localStorage.removeItem("demp-token");
     setCurrentUser(null);
   };
 
+  /* ✅ Update profile */
   const updateUser = async (name) => {
     try {
       const { data } = await api.put("/auth/profile", { name });
@@ -74,6 +76,7 @@ export function AuthContextProvider({ children }) {
     }
   };
 
+  /* ✅ Change password */
   const changePassword = async (currentPassword, newPassword) => {
     try {
       await api.put("/auth/password", { currentPassword, newPassword });
@@ -83,6 +86,7 @@ export function AuthContextProvider({ children }) {
     }
   };
 
+  /* ✅ Delete account */
   const deleteAccount = async (password) => {
     try {
       await api.delete("/auth/account", { data: { password } });
@@ -98,9 +102,9 @@ export function AuthContextProvider({ children }) {
       value={{
         currentUser,
         authReady,
-        loading,         // ✅ now available
+        loading,
         login,
-        register,        // ✅ fixed signature
+        register,
         logout,
         updateUser,
         changePassword,
