@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import LandingPage from "./pages/LandingPage.jsx";
 
@@ -7,7 +7,7 @@ import { useAuthContext } from "./context/AuthContext.jsx";
 import { useThemeContext } from "./context/ThemeContext.jsx";
 import { usePageContext } from "./context/PageContext.jsx";
 
-// Layout Components
+// Layout
 import Sidebar from "./components/Sidebar.jsx";
 import Header from "./components/Header.jsx";
 
@@ -45,6 +45,16 @@ export default function App() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  /* ✅ FIXED: Redirect moved out of render */
+  useEffect(() => {
+    if (currentUser && currentPage === "landing") {
+      if (currentUser.role === "admin") navigate("admin-dashboard");
+      else if (currentUser.role === "organizer") navigate("organizer-dashboard");
+      else navigate("participant-dashboard");
+    }
+  }, [currentUser, currentPage]);
+
+  /* ✅ Show loader while checking token */
   if (!authReady) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -53,12 +63,7 @@ export default function App() {
     );
   }
 
-  if (currentUser && currentPage === "landing") {
-    if (currentUser.role === "admin") navigate("admin-dashboard");
-    else if (currentUser.role === "organizer") navigate("organizer-dashboard");
-    else navigate("participant-dashboard");
-  }
-
+  /* ✅ Page Routing Helper */
   const renderPage = () => {
     if (!currentUser) {
       switch (currentPage) {
@@ -77,7 +82,7 @@ export default function App() {
       case "landing":
         return <LandingPage />;
 
-      // Participant
+      // ✅ Participant
       case "participant-dashboard":
         return <ParticipantDashboard />;
       case "event-details":
@@ -85,7 +90,7 @@ export default function App() {
       case "my-registrations":
         return <MyRegistrationsPage />;
 
-      // Organizer
+      // ✅ Organizer
       case "organizer-dashboard":
         return <OrganizerDashboard />;
       case "create-event":
@@ -93,7 +98,7 @@ export default function App() {
       case "manage-participants":
         return <ManageParticipantsPage />;
 
-      // Admin
+      // ✅ Admin
       case "admin-dashboard":
         return <AdminDashboard />;
       case "manage-events":
@@ -101,12 +106,13 @@ export default function App() {
       case "manage-users":
         return <ManageUsersPage />;
 
-      // Common
+      // ✅ Common
       case "profile":
         return <ProfilePage />;
       case "settings":
         return <SettingsPage />;
 
+      // ✅ Fallback
       default:
         if (currentUser.role === "admin") return <AdminDashboard />;
         if (currentUser.role === "organizer") return <OrganizerDashboard />;
@@ -117,38 +123,37 @@ export default function App() {
   return (
     <div className={`flex min-h-screen w-full ${isDarkMode ? "dark" : ""}`}>
 
-      {/* ✅ SIDEBAR */}
-      {currentUser && (
+      {/* ✅ Sidebar (except participant) */}
+      {currentUser && currentUser.role !== "participant" && (
         <Sidebar
           isOpen={isSidebarOpen}
           closeSidebar={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* ✅ WRAPPER */}
+      {/* ✅ Main Layout */}
       <div className="flex-1 flex flex-col">
 
-        {/* ✅ HEADER */}
+        {/* Header */}
         {currentUser && (
           <Header openSidebar={() => setIsSidebarOpen(true)} />
         )}
 
-        {/* ✅ PAGE CONTENT */}
+        {/* Page Content */}
         <main
           className={`flex-1 p-6 lg:p-10 bg-gray-100 dark:bg-gray-900 ${
-            currentUser ? "lg:ml-64" : ""
+            currentUser && currentUser.role !== "participant" ? "lg:ml-64" : ""
           }`}
         >
           {renderPage()}
         </main>
       </div>
 
-      {/* ✅ GLOBAL TOAST: REQUIRED FOR QR SCAN SUCCESS/ERROR */}
+      {/* ✅ Global Toast */}
       <ToastContainer
         position="top-center"
         autoClose={1500}
         hideProgressBar={false}
-        newestOnTop={false}
         closeOnClick
         pauseOnFocusLoss={false}
         draggable

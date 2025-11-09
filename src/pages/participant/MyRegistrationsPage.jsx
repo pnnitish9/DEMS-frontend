@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../api/api.js";
-import TicketCard from "../../components/TicketCard.jsx";   // ✅ FIXED IMPORT
+import TicketCard from "../../components/TicketCard.jsx";
 import { usePageContext } from "../../context/PageContext.jsx";
 
 export default function MyRegistrationsPage() {
@@ -15,9 +15,6 @@ export default function MyRegistrationsPage() {
       try {
         setLoading(true);
         const { data } = await api.get("/registrations/my");
-
-        console.log("MY REGS:", data); // ✅ DEBUG LOG
-
         setRegs(data);
       } catch (err) {
         console.error("Error loading registrations:", err);
@@ -39,25 +36,29 @@ export default function MyRegistrationsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">My Registrations</h1>
+      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
+        My Registrations
+      </h1>
 
       {regs.length === 0 ? (
-        <div className="text-center bg-white dark:bg-gray-950 p-8 rounded-lg shadow border dark:border-gray-800">
-          <p>You haven’t registered for any events.</p>
+        <div className="text-center bg-white dark:bg-gray-900 p-8 rounded-lg shadow border dark:border-gray-800">
+          <p className="text-gray-700 dark:text-gray-300">
+            You haven’t registered for any events yet.
+          </p>
 
           <button
             onClick={() => navigate("participant-dashboard")}
-            className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg"
+            className="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
           >
             Browse Events
           </button>
         </div>
       ) : (
         <div className="flex flex-wrap gap-6 justify-center">
-        {regs.map((r) => (
-          <TicketCard key={r._id} registration={r} />
-        ))}
-      </div>
+          {regs.map((r) => (
+            <TicketCard key={r._id} registration={r} />
+          ))}
+        </div>
       )}
     </div>
   );
