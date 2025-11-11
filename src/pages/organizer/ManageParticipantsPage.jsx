@@ -125,7 +125,7 @@ export default function ManageParticipantsPage() {
           onClick={() => setScannerOpen(true)}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
         >
-          📷 Open QR Scanner
+          QR Scanner
         </button>
 
         <input
@@ -142,7 +142,7 @@ export default function ManageParticipantsPage() {
       {scannerOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Multi Scan QR Mode</h2>
+            <h2 className="text-xl font-bold mb-4">Scan QR</h2>
 
             <QRScanner onScan={handleQRScan} />
 

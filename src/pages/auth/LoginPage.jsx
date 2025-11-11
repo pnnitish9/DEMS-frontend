@@ -70,15 +70,8 @@ export default function LoginPage() {
       rounded-xl shadow-xl border dark:border-gray-800">
 
         <h1 className="text-3xl font-bold text-center text-indigo-600 dark:text-indigo-400">
-          DEMP Login
+       Login
         </h1>
-
-        {/* Login Type Selector */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <LoginTypeButton type="participant" label="Participant" icon={User} />
-          <LoginTypeButton type="organizer" label="Organizer" icon={Users} />
-          <LoginTypeButton type="admin" label="Admin" icon={Shield} />
-        </div>
 
         {error && <p className="text-red-500 text-center text-sm sm:text-base">{error}</p>}
 

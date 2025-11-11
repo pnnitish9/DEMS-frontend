@@ -81,7 +81,7 @@ export function EventCard({ event, onClick, onRegister }) {
               disabled
               onClick={(e) => e.stopPropagation()}
             >
-              ❌ Event Cancelled
+              Event Cancelled
             </button>
           ) : event?.isRegistered ? (
             <button
@@ -89,7 +89,7 @@ export function EventCard({ event, onClick, onRegister }) {
               disabled
               onClick={(e) => e.stopPropagation()}
             >
-              ✅ Registered
+              Already Registered
             </button>
           ) : (
             <button
