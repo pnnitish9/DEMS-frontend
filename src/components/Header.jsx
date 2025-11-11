@@ -152,7 +152,7 @@ export default function Header({ openSidebar }) {
             {/* Dropdown Panel */}
             {dropdownOpen && (
               <div
-                className="absolute right-0 -mr-20 mt-3 w-80 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-xl shadow-xl p-3 z-50 animate-slideDown"
+                className="absolute right-7 -mr-20 mt-3 w-80 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-xl shadow-xl p-3 z-50 animate-slideDown"
                 role="menu"
               >
                 <div className="flex justify-between items-center mb-2">
