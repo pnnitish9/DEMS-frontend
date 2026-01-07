@@ -1,0 +1,1 @@
+This is Event Management, where collage or communities can manage events.
